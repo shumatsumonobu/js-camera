@@ -1,2 +1,8 @@
+# Dependencies
 node_modules/
+
+# IDE
 .vscode/
+
+# Claude Code
+.claude/

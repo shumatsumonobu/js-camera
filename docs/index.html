@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>js-camera — Zero-dependency camera element for the web</title>
+  <meta name="description" content="Drop in &lt;js-camera&gt;, capture frames, and ship. Web Components V1, pinch-to-zoom, built-in controls, zero dependencies.">
+  <style>
+    /* ── Reset & base ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c-bg: #0a0a0a;
+      --c-surface: #141414;
+      --c-border: #222;
+      --c-text: #e8e8e8;
+      --c-muted: #777;
+      --c-accent: #f5c542;
+      --c-accent-dim: rgba(245, 197, 66, .12);
+      --c-code-bg: #1a1a2e;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      --max-w: 960px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--c-bg);
+      color: var(--c-text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--c-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Hero ───────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 60px 24px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(245, 197, 66, .08), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 100%, rgba(66, 135, 245, .06), transparent);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border: 1px solid var(--c-border);
+      border-radius: 100px;
+      font-size: .8rem;
+      color: var(--c-muted);
+      letter-spacing: .04em;
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -.04em;
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--c-accent), #ff8c42);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      max-width: 520px;
+      font-size: 1.15rem;
+      color: var(--c-muted);
+      margin-bottom: 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: .95rem;
+      font-weight: 600;
+      transition: all .2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--c-accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #ffd166;
+      text-decoration: none;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(245, 197, 66, .25);
+    }
+
+    .btn-ghost {
+      background: var(--c-accent-dim);
+      color: var(--c-accent);
+      border: 1px solid rgba(245, 197, 66, .2);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(245, 197, 66, .2);
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+
+    .hero-install {
+      margin-top: 48px;
+      padding: 14px 28px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: .9rem;
+      color: var(--c-muted);
+      user-select: all;
+    }
+
+    .hero-install strong { color: var(--c-text); }
+
+    /* ── Section layout ────────────────────────────────────── */
+    section {
+      padding: 100px 24px;
+    }
+
+    section:nth-child(even) {
+      background: var(--c-surface);
+    }
+
+    .section-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--c-accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -.03em;
+      margin-bottom: 20px;
+    }
+
+    .section-desc {
+      color: var(--c-muted);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin-bottom: 48px;
+    }
+
+    /* ── Feature grid ──────────────────────────────────────── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      padding: 28px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: 14px;
+      transition: border-color .3s, transform .3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(245, 197, 66, .3);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      font-size: 1.6rem;
+      margin-bottom: 14px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: .88rem;
+      color: var(--c-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Live demo ─────────────────────────────────────────── */
+    .demo-container {
+      position: relative;
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--c-border);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+    }
+
+    .demo-container js-camera {
+      width: 100%;
+      height: 480px;
+    }
+
+    .demo-note {
+      text-align: center;
+      color: var(--c-muted);
+      font-size: .85rem;
+      margin-top: 20px;
+    }
+
+    /* ── Code block ────────────────────────────────────────── */
+    .code-block {
+      background: var(--c-code-bg);
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 12px;
+      padding: 24px 28px;
+      overflow-x: auto;
+      margin-bottom: 24px;
+    }
+
+    .code-block code {
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      line-height: 1.7;
+      color: #c8d3f5;
+    }
+
+    .code-block .kw { color: #c678dd; }
+    .code-block .str { color: #98c379; }
+    .code-block .cmt { color: #5c6370; font-style: italic; }
+    .code-block .fn { color: #61afef; }
+    .code-block .tag { color: #e06c75; }
+    .code-block .attr { color: #d19a66; }
+
+    /* ── Code section two-col ──────────────────────────────── */
+    .code-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 720px) {
+      .code-grid { grid-template-columns: 1fr; }
+    }
+
+    .code-label {
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--c-muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--c-muted);
+      font-size: .85rem;
+      border-top: 1px solid var(--c-border);
+    }
+
+    footer a { color: var(--c-accent); }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Hero ──────────────────────────────────────────────── -->
+  <div class="hero">
+    <div class="hero-badge">v2.0 &mdash; Now with Pinch-to-Zoom</div>
+    <h1><span>js-camera</span></h1>
+    <p>Zero-dependency camera element for the web. Drop in one tag, capture frames, and ship.</p>
+    <div class="hero-actions">
+      <a href="#demo" class="btn btn-primary">Try Live Demo</a>
+      <a href="https://github.com/shumatsumonobu/js-camera" class="btn btn-ghost">GitHub</a>
+    </div>
+    <div class="hero-install">
+      <strong>npm install js-camera</strong>
+    </div>
+  </div>
+
+  <!-- ── Features ──────────────────────────────────────────── -->
+  <section>
+    <div class="section-inner">
+      <div class="section-label">Features</div>
+      <h2 class="section-title">Everything you need. Nothing you don't.</h2>
+      <p class="section-desc">A single custom element that handles camera access, live preview, image capture, and gesture zoom.</p>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">&#9881;</div>
+          <h3>Web Components V1</h3>
+          <p>Works with React, Vue, Svelte, or vanilla HTML. No framework lock-in.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128247;</div>
+          <h3>Capture & Export</h3>
+          <p>PNG, JPEG, WebP. Resize, crop, and fit — all in one call.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128269;</div>
+          <h3>Pinch-to-Zoom</h3>
+          <p>Two-finger zoom on touch devices. Captured images respect the zoom level.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#127916;</div>
+          <h3>Built-in Controls</h3>
+          <p>Play/pause, capture button, face-switch. Or go fully programmatic.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128257;</div>
+          <h3>Front & Back</h3>
+          <p>Switch between cameras. Select specific devices by ID.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#9889;</div>
+          <h3>Zero Dependencies</h3>
+          <p>~10 KB gzipped. No runtime bloat. Just drop it in.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Code ──────────────────────────────────────────────── -->
+  <section>
+    <div class="section-inner">
+      <div class="section-label">Quick Start</div>
+      <h2 class="section-title">3 lines to camera.</h2>
+      <p class="section-desc">Add the tag, import the module, done.</p>
+      <div class="code-grid">
+        <div>
+          <div class="code-label">HTML</div>
+          <div class="code-block">
+            <code><span class="tag">&lt;js-camera</span> <span class="attr">autoplay</span> <span class="attr">facing</span>=<span class="str">"back"</span> <span class="attr">controls</span><span class="tag">&gt;&lt;/js-camera&gt;</span></code>
+          </div>
+        </div>
+        <div>
+          <div class="code-label">JavaScript</div>
+          <div class="code-block">
+            <code><span class="kw">import</span> <span class="str">'js-camera'</span>;</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-label" style="margin-top: 40px;">Programmatic Usage</div>
+      <div class="code-block">
+<code><span class="kw">import</span> <span class="str">'js-camera'</span>;
+
+<span class="kw">const</span> camera = document.<span class="fn">querySelector</span>(<span class="str">'js-camera'</span>);
+
+<span class="cmt">// Open rear camera at Full HD</span>
+<span class="kw">await</span> camera.<span class="fn">open</span>({ facingMode: <span class="str">'back'</span>, width: <span class="str">1920</span>, height: <span class="str">1080</span> });
+
+<span class="cmt">// Capture as JPEG</span>
+<span class="kw">const</span> jpeg = camera.<span class="fn">capture</span>({ format: <span class="str">'image/jpeg'</span> });
+
+<span class="cmt">// Crop a region</span>
+<span class="kw">const</span> cropped = camera.<span class="fn">capture</span>({ extract: { x: <span class="str">100</span>, y: <span class="str">50</span>, width: <span class="str">200</span>, height: <span class="str">200</span> } });</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Live Demo ─────────────────────────────────────────── -->
+  <section id="demo">
+    <div class="section-inner">
+      <div class="section-label">Live Demo</div>
+      <h2 class="section-title">See it in action.</h2>
+      <p class="section-desc">This is a real <code>&lt;js-camera&gt;</code> element running right here. Try the controls — capture, pause, switch cameras.</p>
+      <div class="demo-container">
+        <js-camera autoplay facing="back" controls></js-camera>
+      </div>
+      <p class="demo-note">Camera access required. Works best on mobile for face-switch and pinch-to-zoom.</p>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/shumatsumonobu/js-camera">GitHub</a>
+      <a href="https://www.npmjs.com/package/js-camera">npm</a>
+      <a href="https://github.com/shumatsumonobu/js-camera/blob/master/CHANGELOG.md">Changelog</a>
+    </div>
+    <p>MIT License &mdash; Made by <a href="https://x.com/shumatsumonobu">shumatsumonobu</a></p>
+  </footer>
+
+  <script src="js-camera.js"></script>
+</body>
+
+</html>
+</code>

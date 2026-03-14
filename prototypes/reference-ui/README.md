@@ -1,1 +1,0 @@
-https://websdk-document.scanbot.io/#/scanner

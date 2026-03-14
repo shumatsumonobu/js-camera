@@ -1,0 +1,226 @@
+:root {
+  --jsc-capture-btn-size: 64px;
+  --jsc-capture-btn-border: 6px;
+  --jsc-capture-btn-inner: calc(var(--jsc-capture-btn-size) - var(--jsc-capture-btn-border) - 10px);
+  --jsc-facing-btn-size: 48px;
+  --jsc-thumbnail-size: 48px;
+  --jsc-playback-btn-size: 64px;
+}
+
+/* ── Base reset ───────────────────────────────────────────────────────── */
+
+.jsc *,
+.jsc *::before,
+.jsc *::after {
+  box-sizing: border-box;
+}
+
+.jsc img {
+  border: 0;
+  vertical-align: middle;
+}
+
+.jsc button {
+  border: none;
+  padding: 0;
+  background-color: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.jsc :focus-visible {
+  outline: 4px solid rgba(0, 125, 250, 0.6);
+  outline-offset: 1px;
+}
+
+/* ── Global reset ────────────────────────────────────────────────────── */
+
+:where(body) {
+  margin: 0;
+}
+
+/* ── Camera container ─────────────────────────────────────────────────── */
+
+.jsc {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+:where(.jsc) {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ── Video element ────────────────────────────────────────────────────── */
+
+.jsc-video {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Play/pause overlay ───────────────────────────────────────────────── */
+
+.jsc-overlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jsc-overlay::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0);
+  transition: background-color 700ms;
+}
+
+.jsc-overlay.fadein::after {
+  background-color: rgba(0, 0, 0, .6);
+}
+
+.jsc-playback-btn {
+  position: relative;
+  z-index: 2;
+  width: var(--jsc-playback-btn-size);
+  height: var(--jsc-playback-btn-size);
+  visibility: hidden;
+}
+
+.jsc-overlay.fadein .jsc-playback-btn {
+  visibility: visible;
+}
+
+.jsc-playback-btn i {
+  display: inline-block;
+  width: var(--jsc-playback-btn-size);
+  height: var(--jsc-playback-btn-size);
+}
+
+.jsc-playback-btn i::after {
+  content: '';
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+.jsc-playback-btn[played='true'] i::after {
+  background: url("data:image/svg+xml,%3Csvg id='Layer_1' data-name='Layer 1' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 85 85'%3E%3Cdefs%3E%3Cstyle%3E.cls-1,.cls-2%7Bfill:none;%7D.cls-2%7Bstroke:%23fff;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;%7D.cls-2,.cls-3%7Bfill-rule:evenodd;%7D.cls-3%7Bfill:%23fff;%7D%3C/style%3E%3C/defs%3E%3Ctitle%3Eplay-buffer-pause-LMS-01-jorge%3C/title%3E%3Cpath class='cls-1' d='M0,0H85V85H0Z'/%3E%3Cpath class='cls-1' d='M0,0H85V85H0Z'/%3E%3Cpath class='cls-2' d='M42.5,2.5a40,40,0,1,1-40,40A40,40,0,0,1,42.5,2.5Z'/%3E%3Cpath class='cls-3' d='M50,28.25a2,2,0,0,1,2,2v24a2,2,0,1,1-4,0v-24A2,2,0,0,1,50,28.25Z'/%3E%3Cpath class='cls-3' d='M35,28.25a2,2,0,0,1,2,2v24a2,2,0,1,1-4,0v-24A2,2,0,0,1,35,28.25Z'/%3E%3C/svg%3E") 0 0 / cover no-repeat;
+}
+
+.jsc-playback-btn[played='false'] i::after {
+  background: url("data:image/svg+xml,%3Csvg id='Layer_1' data-name='Layer 1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 85 85'%3E%3Cdefs%3E%3Cstyle%3E.cls-1,.cls-2%7Bfill:none;%7D.cls-2%7Bstroke:%23fff;stroke-linecap:round;stroke-linejoin:round;stroke-width:4px;fill-rule:evenodd;%7D.cls-3%7Bclip-path:url(%23clip-path);%7D.cls-4%7Bfill:%23fff;%7D%3C/style%3E%3CclipPath id='clip-path'%3E%3Crect class='cls-1' x='33.05' y='28.25' width='22.9' height='28'/%3E%3C/clipPath%3E%3C/defs%3E%3Ctitle%3Eplay_icon_large%3C/title%3E%3Cpath class='cls-2' d='M42.5,2.5a40,40,0,1,1-40,40A40,40,0,0,1,42.5,2.5Z'/%3E%3Cpath class='cls-1' d='M0,0H85V85H0Z'/%3E%3Cpath class='cls-1' d='M0,0H85V85H0Z'/%3E%3Cg class='cls-3'%3E%3Cpath class='cls-4' d='M55.73,41.55a1.34,1.34,0,0,1,0,1.48,1.16,1.16,0,0,1-.52.52L35.27,56.1a1.33,1.33,0,0,1-.74.15,1.54,1.54,0,0,1-1.48-1.48v-25a1.25,1.25,0,0,1,.22-.74,1.16,1.16,0,0,1,.52-.52,1.25,1.25,0,0,1,.74-.22,2.19,2.19,0,0,1,.74.15L55.21,41a2,2,0,0,1,.52.59'/%3E%3C/g%3E%3C/svg%3E") 0 0 / cover no-repeat;
+}
+
+/* ── Control bar ──────────────────────────────────────────────────────── */
+
+.jsc-controls {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  min-width: 320px;
+  background-color: #000;
+}
+
+.jsc-controls-inner {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 0 auto;
+  max-width: 980px;
+  padding: 10px 22px;
+  width: 100%;
+}
+
+@supports (padding: calc(max(0px))) {
+  .jsc-controls-inner {
+    padding-left: calc(max(22px, env(safe-area-inset-left)));
+    padding-right: calc(max(22px, env(safe-area-inset-right)));
+  }
+}
+
+/* ── Captured image thumbnail ─────────────────────────────────────────── */
+
+.jsc-thumbnail {
+  display: block;
+  margin-right: auto;
+  width: var(--jsc-thumbnail-size);
+  height: var(--jsc-thumbnail-size);
+  border: 1px solid hsla(0, 0%, 100%, .1);
+  border-radius: 4px;
+}
+
+.jsc-thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* ── Capture button ───────────────────────────────────────────────────── */
+
+.jsc-capture-btn {
+  position: relative;
+  width: var(--jsc-capture-btn-size);
+  height: var(--jsc-capture-btn-size);
+  border-radius: 50%;
+  border: var(--jsc-capture-btn-border) solid #fff;
+  background-color: #000;
+}
+
+.jsc-capture-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--jsc-capture-btn-inner);
+  height: var(--jsc-capture-btn-inner);
+  border-radius: 50%;
+  background-color: #fff;
+  transition: transform .2s ease;
+}
+
+.jsc-capture-btn:active::after {
+  transform: translate(-50%, -50%) scale(.85);
+}
+
+/* ── Face-switch button ───────────────────────────────────────────────── */
+
+.jsc-facing-btn {
+  margin-left: auto;
+  width: var(--jsc-facing-btn-size);
+  height: var(--jsc-facing-btn-size);
+  background: url(data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9JzMwMHB4JyB3aWR0aD0nMzAwcHgnICBmaWxsPSIjRkZGRkZGIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjEiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgNTEyIDUxMiIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+PGc+PHBhdGggZD0iTTMwMS44MTUsMzE4LjYwOGMtMTMuMTE0LDExLjAyOS0yOC45NTYsMTcuMzU2LTQ1LjgxNSwxNy4zNTZjLTM2LjM2LDAtNjYuMjg2LTI4Ljk2NS03MC44OS02MS45NjVoMzAuNjFsLTM4Ljg3LTUwICAgbC0zNy41MzQsNTBoMjkuNDc5YzQuNjk2LDQyLDQxLjcxNyw3OCw4Ny4yMDUsNzhjMjAuOSwwLDQxLjE3LTcuNTY2LDU3LjA3Ni0yMS4yMThsMi4zNy0yLjE1OWwtMTEuNTk5LTExLjY2MkwzMDEuODE1LDMxOC42MDh6Ij48L3BhdGg+PHBhdGggZD0iTTMxNS43MzYsMTk4Ljg4NWMtMTYuMTg4LTE0Ljc3NS0zNy40MDItMjIuODM5LTU5LjczNi0yMi44MzljLTIwLjksMC00MS4xNjksNy41NTYtNTcuMDc1LDIxLjIwNmwtMi4zNzEsMi4wNTIgICBsMTEuNTk5LDExLjYxbDIuMDMzLTEuNzA2YzEyLjkyNy0xMC44NzIsMjkuMTk3LTE3LjAwNSw0NS44MTQtMTcuMDA1YzM2LjM0MywwLDY2LjI3NCwyOC43OTcsNzAuODkxLDYzLjc5N2gtMzAuNjQ0bDM4Ljg0Niw1MS4yMjUgICBMMzcyLjcxOSwyNTZoLTI5LjUxMkMzNDAuOTY2LDIzNiwzMzEuMjc1LDIxMy4wNjQsMzE1LjczNiwxOTguODg1eiI+PC9wYXRoPjxwYXRoIGQ9Ik00MTcuNSwxNjBoLTYxLjcyNWMtMzIuMTA1LTM2LTQyLjIxOS00OC01NC41MjUtNDhoLTg4LjVjLTEyLjMxNCwwLTIyLjE2NywxMi01NC41MjEsNDhIMTQ1di0xNmgtMzR2MTZIOTcuNSAgIEM3OS44NTUsMTYwLDY0LDE3My4yMTcsNjQsMTkwLjY4NHYxNzYuMDE4QzY0LDM4NC4xNjksNzkuODU1LDQwMCw5Ny41LDQwMGgzMjBjMTcuNjQ1LDAsMzAuNS0xNS44MzEsMzAuNS0zMy4yOTlWMTkwLjY4NCAgIEM0NDgsMTczLjIxNyw0MzUuMTQ1LDE2MCw0MTcuNSwxNjB6IE00MzIsMzY2LjcwMWMwLDkuMjYzLTYuMjI5LDE3LjI5OS0xNC41LDE3LjI5OWgtMzIwYy04LjczOCwwLTE3LjUtOC42NjQtMTcuNS0xNy4yOTlWMTkwLjY4NCAgIEM4MCwxODIuNTE4LDg4LjEyNiwxNzYsOTcuNSwxNzZoNjAuNzI5YzAsMCw0LjEyNCwwLDYuMTMzLDBzMy4yMjUtMC4xOTksNS43NjgtMy4yczcuNzAyLTEwLjAwOCwxMS4wOC0xMy43OTUgICBjMTEuMjk2LTEyLjY2NiwxOS40NTctMjEuOTE1LDI1LjMxNi0yNy4xMzJjNC43NDYtNC4yMjUsNi4yMTEtMy44NzMsNi4yMjUtMy44NzNoODguNWMwLjAxNiwwLDEuNjExLTAuMzYzLDYuNzA5LDQuMjE5ICAgYzYuMTQxLDUuNTIxLDE0LjcwNSwxNi44NCwyNi41NTgsMzAuMTk4YzIuODg4LDMuMjU1LDcuMjE0LDguMTEsOS4zMTcsMTAuNDRzNC4yNTIsMy4xNDMsNS43NzEsMy4xNDNzNi4xNywwLDYuMTcsMEg0MTcuNSAgIGM4LjgzMiwwLDE0LjUsNS45NjUsMTQuNSwxNC42ODRWMzY2LjcwMXoiPjwvcGF0aD48L2c+PC9zdmc+) center / contain no-repeat transparent;
+  transition: opacity .2s ease;
+}
+
+.jsc-facing-btn:active {
+  opacity: .5;
+}
+
+/* ── Flash effect overlay ─────────────────────────────────────────────── */
+
+.jsc-flash {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  background-color: #fff;
+  display: none;
+}
+

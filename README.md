@@ -1,197 +1,234 @@
 # js-camera
-This is a custom element V1-based camera component.
 
-## Installation
+![banner](screenshots/banner.png)
+
+Zero-dependency camera element for the web.
+Drop in `<js-camera>`, capture frames, and ship.
+
+[Live Demo](https://shumatsumonobu.github.io/js-camera/)
+
+- Web Components V1 — works with React, Vue, Svelte, or vanilla
+- Capture as PNG / JPEG / WebP with resize, crop, and fit options
+- Pinch-to-zoom on touch devices
+- Built-in controls (play/pause, capture, face-switch) or go fully programmatic
+- Front / back camera switching and device selection
+- Zero dependencies, ~10 KB gzipped
+
 ```sh
-npm install js-camera;
+npm install js-camera
 ```
+
+## 3 Lines to Camera
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<js-camera autoplay facing="back" controls></js-camera>
+```
+
+```js
+import 'js-camera';
+```
+
+That's it. Play/pause, capture, face-switch — all built in. Fills the viewport by default.
+The viewport meta prevents the browser from hijacking pinch-to-zoom.
+
+![controls](screenshots/controls.png)
+
+### Custom Size
+
+```css
+js-camera {
+  width: 400px;
+  height: 300px;
+}
+```
+
+## Go Deeper
+
+Drop the `controls` attribute and take full control.
+
+```js
+import 'js-camera';
+
+const camera = document.querySelector('js-camera');
+
+// Open rear camera at Full HD
+await camera.open({ facingMode: 'back', width: 1920, height: 1080 });
+
+// Capture
+const png = camera.capture();
+const jpeg = camera.capture({ format: 'image/jpeg', width: 640, height: 480, fit: 'cover' });
+const cropped = camera.capture({ extract: { x: 100, y: 50, width: 200, height: 200 } });
+
+// Playback
+camera.pause();
+camera.play();
+
+// Done
+camera.close();
+```
+
+## Create on the Fly
+
+```js
+import Camera from 'js-camera';
+
+const camera = Camera.createElement();
+document.body.appendChild(camera);
+await camera.open({ facingMode: 'front' });
+```
+
+## Listen
+
+```js
+camera
+  .on('opened',   () => console.log('Ready'))
+  .on('captured', (e) => upload(e.detail.capture))
+  .on('paused',   () => console.log('Paused'))
+  .on('played',   () => console.log('Resumed'));
+```
+
+| Event | Fires when | `event.detail` |
+|-------|-----------|----------------|
+| `opened` | Stream is ready | — |
+| `captured` | Frame captured via built-in button | `.capture` — data URL |
+| `paused` | Playback paused | — |
+| `played` | Playback resumed | — |
 
 ## API
-[API Documentation](./API.md)
 
-## Usage
-### Use Camera Controls
-You can use play, pause, capture and camera face switch immediately by using "controls" attribute on camera element.
+### HTML Attributes
 
-![camera-with-controller.jpg](screencaps/camera-with-controller.jpg)
+| Attribute | Description | Default |
+|-----------|-------------|---------|
+| `autoplay` | Open camera on DOM insertion | — |
+| `facing` | `"front"` or `"back"` (used with `autoplay`) | `"back"` |
+| `width` | Desired resolution width (px) | device default |
+| `height` | Desired resolution height (px) | device default |
+| `controls` | Show built-in UI | — |
 
-Add "controls" and "autoplay" attributes to the camera element.  
-If necessary, specify the camera face with the "facing" attribute and the resolution with the "width" and "height" attributes.  
-The default for the "facing" attribute is "back". If omitted, the rear camera opens.
+### Static Methods
 
-```html
-<js-camera id="camera" controls autoplay facing="back" width="1920" height="1080"></js-camera>
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Camera.define()` | `typeof Camera` | Register `<js-camera>`. Auto-called on import. |
+| `Camera.createElement()` | `Camera` | Create a new element. Calls `define()` if needed. |
+
+### Properties (read-only)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `state` | `'open' \| 'loading' \| 'close'` | Lifecycle state |
+| `opened` | `boolean` | Stream is active |
+| `paused` | `boolean` | Playback is paused |
+| `facingMode` | `'front' \| 'back' \| undefined` | Current direction |
+| `deviceId` | `string \| undefined` | Active camera device ID |
+| `resolution` | `{ width, height }` | Actual hardware resolution |
+| `track` | `MediaStreamTrack \| undefined` | Active video track |
+| `zoom` | `number` | Current zoom level (`1` = no zoom) |
+
+### Methods
+
+#### `open(options?): Promise<MediaTrackSettings>`
+
+Opens the camera. Re-opens if already active.
+Throws `DOMException` on denial or unavailable device.
+
+| Option | Type | Default | Note |
+|--------|------|---------|------|
+| `facingMode` | `'front' \| 'back'` | `'front'` | Ignored when `deviceId` is set |
+| `width` | `number` | — | Falls back to HTML attribute |
+| `height` | `number` | — | Falls back to HTML attribute |
+| `deviceId` | `string` | — | Target a specific camera |
+
+#### `waitOpen(): Promise<void>`
+
+Resolves when the camera finishes opening. Instant if not loading.
+
+#### `close()`
+
+Stops the stream and releases all resources.
+
+#### `play(): Promise<void>`
+
+Resumes from pause.
+
+#### `pause()`
+
+Freezes the current frame.
+
+#### `resetZoom()`
+
+Resets zoom level to 1. Pinch-to-zoom is built in — use two fingers on touch devices.
+
+#### `capture(options?): string`
+
+Returns a data URL of the current frame.
+
+| Option | Type | Default | Note |
+|--------|------|---------|------|
+| `width` | `number` | — | Omit one to keep aspect ratio |
+| `height` | `number` | — | Omit one to keep aspect ratio |
+| `fit` | `'cover' \| 'contain' \| 'fill'` | `'fill'` | Same as CSS `object-fit` |
+| `format` | `string` | `'image/png'` | `'image/jpeg'`, `'image/webp'`, etc. |
+| `extract` | `{ x, y, width, height }` | — | Crop region in CSS pixels |
+
+#### `queryPermission(): Promise<PermissionState | undefined>`
+
+Returns `'granted'`, `'denied'`, `'prompt'`, or `undefined` if unsupported.
+
+#### `revokePermission(): Promise<void>`
+
+Revokes camera permission. Not supported in all browsers.
+
+#### `getDevices(): Promise<Array<{ deviceId, label }>>`
+
+Lists available cameras. Requests temporary access if needed.
+
+#### `on(type, listener, options?): Camera`
+
+Adds a listener. Returns `this` for chaining. Pass `{ once: true }` to auto-remove.
+
+#### `off(type, listener): Camera`
+
+Removes a listener. Returns `this` for chaining.
+
+### Types
+
+```ts
+import Camera, { type CameraOpenOptions, type CaptureOptions } from 'js-camera';
 ```
 
-You can receive the photos taken at the event and send them to the server.  
-Also use the play and pause events if needed.  
-
-```js
-import 'js-camera';
-
-// Camera element
-const camera = document.querySelector('#camera');
-
-// If you use the "autoplay" attribute to automatically open camera, you can wait for the camera to fully open if necessary.
-await camera.waitOpen();
-
-// Camera event listener
-camera
-  // Called after opening the camera
-  .on('opened', () => {})
-  // Called after playing the camera from pause/
-  .on('played', () => {})
-  // Called after pausing the camera
-  .on('paused', () => {})
-  // Returns the photo taken from the shoot button on the camera controller
-  // The captured image can be received from "event.detail.dat" in data URL.
-  .on('captured', event => {
-    console.log(event.detail.capture.slice(0, 30));
-  });
-```
-
-### Try camera options
-If you want to experiment with different camera options, you can use "dat-gui" for the camera element and use the options menu.
-
-![camera-with-controller.jpg](screencaps/camera-with-gui.jpg)
-
-The current GUI options can be accessed from the camera element "guiState".  
-Here is an example using the GUI option.
-
-Add "dat-gui" attribute to the camera element.
-
-```html
-<js-camera id="camera" dat-gui></js-camera>
-```
-
-Get camera elements with JS and operate GUI options.
-
-```js
-
-import 'js-camera';
-
-// Camera element
-const camera = document.querySelector('#camera');
-
-// Open camera
-const [width, height] = camera.guiState.resolution.split(',');
-await camera.open(camera.guiState.facing, width, height);
-
-// Close camera
-camera.close();
-
-// Take a photo
-const options = {format: camera.guiState.format};// Capture options
-if (camera.guiState.resize) {
-  options.width = camera.guiState.width;
-  options.height = camera.guiState.height;
-  options.fit = camera.guiState.fit;
+```ts
+interface CameraOpenOptions {
+  facingMode?: 'front' | 'back';  // default: 'front'
+  width?: number;
+  height?: number;
+  deviceId?: string;
 }
-const capture = camera.capture(options);
-console.log(capture);
 
-// Pause
-camera.pause();
-
-// Resume from pause
-camera.play();
-```
-
-### Basic camera usage.
-Place the camera open/close, play, pause, and capture buttons in the HTML.
-
-```html
-<style>
-.actions {
-  position: absolute;
-  z-index: 1002;
-  left: 0;
-  bottom: 0;
-  padding: 10px;
-  width: 100%;
-  text-align: center;
+interface CaptureOptions {
+  width?: number;
+  height?: number;
+  extract?: { x: number; y: number; width: number; height: number };
+  fit?: 'cover' | 'contain' | 'fill';  // default: 'fill'
+  format?: string;                       // default: 'image/png'
 }
-</style>
-
-<js-camera id="camera"></js-camera>
-
-<div class="actions">
-  <button id="openButton" type="button">Open</button>
-  <button id="closeButton" type="button">Close</button>
-  <button id="pauseButton" type="button">Pause</button>
-  <button id="playButton" type="button">Play</button>
-  <button id="captureButton" type="button">Capture</button>
-</div>
 ```
 
-Implements camera opening, closing, playing, pausing, and button event capture.  
-This is the easiest way to use the camera.
+## Browser Support
 
-```js
-import 'js-camera';
+[Custom Elements V1](https://caniuse.com/custom-elementsv1) + [getUserMedia](https://caniuse.com/stream)
 
-// Camera element
-const camera = document.querySelector('#camera');
+## Changelog
 
-// Open camera.
-// If necessary, you can also specify the resolution like "await camera.open('back', 1920, 1080)".
-document.querySelector('#openButton').addEventListener('click', async () => {
-  await camera.open('back');
-});
-
-// Close  camera.
-document.querySelector('#closeButton').addEventListener('click', () => {
-  if (!camera.opened)
-    return;
-  camera.close();
-});
-
-// Pause
-document.querySelector('#pauseButton').addEventListener('click', () => {
-  if (!camera.opened)
-    return;
-  camera.pause();
-});
-
-// Play camera
-document.querySelector('#playButton').addEventListener('click', () => {
-  if (!camera.opened)
-    return;
-  camera.play();
-});
-
-// Take a photo
-document.querySelector('#captureButton').addEventListener('click', () => {
-  if (!camera.opened)
-    return;
-  // Get capture data URL.
-  let capture = camera.capture();
-  console.log(`Capture: ${capture}`);// Capture: data:image/png;base64,iVBORw0K
-
-  // You can specify image/webp, image/png, image/jpeg as the capture format.
-  // Default is image/png.
-  capture = camera.capture({format: 'image/webp'});
-  console.log(`WebP capture: ${capture}`);// WebP capture: data:image/webp;base64,UklGRrb
-
-  // You can also resize the capture with width, height, and fit options.
-  capture = camera.capture({
-    fit: 'cover',
-    width: 300,
-    height: 200
-  });
-  console.log(`Resize capture: ${capture}`);// Resize capture: data:image/png;base64,iVBORw0K
-});
-```
-
-## Release Notes
-All changes can be found [here](CHANGELOG.md).
+[CHANGELOG.md](CHANGELOG.md)
 
 ## Author
-**Takuya Motoshima**
 
-* [github/takuya-motoshima](https://github.com/takuya-motoshima)
-* [twitter/TakuyaMotoshima](https://twitter.com/TakuyaMotoshima)
-* [facebook/takuya.motoshima.7](https://www.facebook.com/takuya.motoshima.7)
+**shumatsumonobu** — [GitHub](https://github.com/shumatsumonobu) / [X](https://x.com/shumatsumonobu) / [Facebook](https://www.facebook.com/takuya.motoshima.7)
 
 ## License
+
 [MIT](LICENSE)

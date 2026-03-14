@@ -1,4 +1,12 @@
+# Dependencies
 node_modules/
+
+# Source code (only dist/ is published)
 src/
+
+# Build configuration
 rollup.config.js
 tsconfig.json
+
+# Claude Code
+.claude/
